@@ -29,19 +29,19 @@ class Debugger(object):
     if self.theme == 'white':
       self.colors = self.colors.reshape(-1)[::-1].reshape(len(colors), 1, 1, 3)
       self.colors = np.clip(self.colors, 0., 0.6 * 255).astype(np.uint8)
-  
+
     self.num_joints = 17
-    self.edges = [[0, 1], [0, 2], [1, 3], [2, 4], 
-                  [3, 5], [4, 6], [5, 6], 
-                  [5, 7], [7, 9], [6, 8], [8, 10], 
-                  [5, 11], [6, 12], [11, 12], 
+    self.edges = [[0, 1], [0, 2], [1, 3], [2, 4],
+                  [3, 5], [4, 6], [5, 6],
+                  [5, 7], [7, 9], [6, 8], [8, 10],
+                  [5, 11], [6, 12], [11, 12],
                   [11, 13], [13, 15], [12, 14], [14, 16]]
-    self.ec = [(255, 0, 0), (0, 0, 255), (255, 0, 0), (0, 0, 255), 
+    self.ec = [(255, 0, 0), (0, 0, 255), (255, 0, 0), (0, 0, 255),
                 (255, 0, 0), (0, 0, 255), (255, 0, 255),
                 (255, 0, 0), (255, 0, 0), (0, 0, 255), (0, 0, 255),
                 (255, 0, 0), (0, 0, 255), (255, 0, 255),
                 (255, 0, 0), (255, 0, 0), (0, 0, 255), (0, 0, 255)]
-    self.colors_hp = [(128, 0, 128), (128, 0, 0), (0, 0, 128), 
+    self.colors_hp = [(128, 0, 128), (128, 0, 0), (0, 0, 128),
       (128, 0, 0), (0, 0, 128), (128, 0, 0), (0, 0, 128),
       (128, 0, 0), (0, 0, 128), (128, 0, 0), (0, 0, 128),
       (128, 0, 0), (0, 0, 128), (128, 0, 0), (0, 0, 128),
@@ -57,17 +57,17 @@ class Debugger(object):
     if revert_color:
       img = 255 - img
     self.imgs[img_id] = img.copy()
-  
+
   def add_mask(self, mask, bg, imgId = 'default', trans = 0.8):
     self.imgs[imgId] = (mask.reshape(
       mask.shape[0], mask.shape[1], 1) * 255 * trans + \
       bg * (1 - trans)).astype(np.uint8)
-  
+
   def show_img(self, pause = False, imgId = 'default'):
     cv2.imshow('{}'.format(imgId), self.imgs[imgId])
     if pause:
       cv2.waitKey()
-  
+
   def add_blend_img(self, back, fore, img_id='blend', trans=0.7):
     if self.theme == 'white':
       fore = 255 - fore
@@ -79,7 +79,7 @@ class Debugger(object):
     self.imgs[img_id][self.imgs[img_id] > 255] = 255
     self.imgs[img_id][self.imgs[img_id] < 0] = 0
     self.imgs[img_id] = self.imgs[img_id].astype(np.uint8).copy()
-  
+
 
   def add_overlay_img(self, img, fore, img_id="overlay", alpha=0.1):
 
@@ -102,12 +102,12 @@ class Debugger(object):
     colors = np.array([0,255,0], dtype=np.float32).reshape(-1, 3)[:c].reshape(1, 1, c, 3)
     color_map = (fore * colors).max(axis=2).astype(np.uint8)
     color_map = cv2.resize(color_map, (output_res[1], output_res[0]), fx=0, fy=0, interpolation = cv2.INTER_NEAREST)
-    
+
     if color_map.shape[0] != img.shape[0] or color_map.shape[0] != img.shape[1]:
       color_map = cv2.resize(color_map, (img.shape[1], img.shape[0]))
     if len(fore.shape) == 2:
       color_map = color_map.reshape(color_map.shape[0], color_map.shape[1], 1)
-    
+
     ## Overlay colormap on image
     back = cv2.bitwise_and(mask, self.imgs[img_id])
     self.imgs[img_id] = cv2.add(back, color_map)
@@ -130,10 +130,10 @@ class Debugger(object):
     color_map = (img * colors).max(axis=2).astype(np.uint8)
     color_map = cv2.resize(color_map, (output_res[1], output_res[0]))
     return color_map
-    
+
   def gen_colormap_hp(self, img, output_res=None):
     img = img.copy()
-    img[img == 1] = 0.5 
+    img[img == 1] = 0.5
     c, h, w = img.shape[0], img.shape[1], img.shape[2]
     if output_res is None:
       output_res = (h * self.down_ratio, w * self.down_ratio)
@@ -145,11 +145,11 @@ class Debugger(object):
     color_map = (img * colors).max(axis=2).astype(np.uint8)
     color_map = cv2.resize(color_map, (output_res[0], output_res[1]))
     return color_map
-  
+
   def gen_pointcloud(self, pc, pc_N, img_shape):
     h, w, c = img_shape
     output_res = (h, w, c)
-    
+
     if self.theme == 'white':
       img = 255 * np.ones(shape=output_res, dtype=np.uint8)
     else:
@@ -171,8 +171,8 @@ class Debugger(object):
     c = ((np.random.random((3)) * 0.6 + 0.2) * 255).astype(np.int32).tolist()
     return c
 
-  def add_coco_bbox(self, bbox, cat, conf=1, show_txt=True, 
-    no_bbox=False, img_id='default', dist=-1): 
+  def add_coco_bbox(self, bbox, cat, conf=1, show_txt=True,
+    no_bbox=False, img_id='default', dist=-1):
     bbox = np.array(bbox, dtype=np.int32)
     dist = ', {:.1f}m'.format(int(dist)) if dist >= 0 else ''
     cat = int(cat)
@@ -200,25 +200,25 @@ class Debugger(object):
       cat_size = cv2.getTextSize(txt, font, fontsize, thickness)[0]
       if not no_bbox:
         cv2.rectangle(
-          self.imgs[img_id], (bbox[0], bbox[1]), (bbox[2], bbox[3]), 
+          self.imgs[img_id], (bbox[0], bbox[1]), (bbox[2], bbox[3]),
           c, thickness)
-        
+
       if show_txt:
         cv2.rectangle(self.imgs[img_id],
                       (bbox[0], bbox[1] - cat_size[1] - thickness),
                       (bbox[0] + cat_size[0], bbox[1]), c, -1)
-        cv2.putText(self.imgs[img_id], txt, (bbox[0], bbox[1] - thickness - 1), 
+        cv2.putText(self.imgs[img_id], txt, (bbox[0], bbox[1] - thickness - 1),
                     font, fontsize, (0, 0, 0), thickness=1, lineType=cv2.LINE_AA)
 
   def add_tracking_id(self, ct, tracking_id, img_id='default'):
     txt = '{}'.format(tracking_id)
     fontsize = 0.5
-    cv2.putText(self.imgs[img_id], txt, (int(ct[0]), int(ct[1])), 
-                cv2.FONT_HERSHEY_SIMPLEX, fontsize, 
+    cv2.putText(self.imgs[img_id], txt, (int(ct[0]), int(ct[1])),
+                cv2.FONT_HERSHEY_SIMPLEX, fontsize,
                 (255, 0, 255), thickness=1, lineType=cv2.LINE_AA)
 
 
-  def add_coco_hp(self, points, tracking_id=0, img_id='default'): 
+  def add_coco_hp(self, points, tracking_id=0, img_id='default'):
     points = np.array(points, dtype=np.int32).reshape(self.num_joints, 2)
     if not self.opt.show_track_color:
       for j in range(self.num_joints):
@@ -241,6 +241,7 @@ class Debugger(object):
   def show_all_imgs(self, pause=False, Time=0):
     if 1:
       for i, v in self.imgs.items():
+        # NOTE(drobinson): here's where we might want to save the images out
         cv2.imshow('{}'.format(i), v)
       if not self.with_3d:
         cv2.waitKey(0 if pause else 1)
@@ -275,7 +276,7 @@ class Debugger(object):
 
   def save_img(self, imgId='default', path='./cache/debug/'):
     cv2.imwrite(path + '{}.png'.format(imgId), self.imgs[imgId])
-    
+
   def save_all_imgs(self, path='./cache/debug/', prefix='', genID=False):
     if genID:
       try:
@@ -329,11 +330,11 @@ class Debugger(object):
     return pt.astype(np.int32)
 
   def add_3d_detection(
-    self, image_or_path, flipped, dets, calib, show_txt=False, 
+    self, image_or_path, flipped, dets, calib, show_txt=False,
     vis_thresh=0.3, img_id='det'):
     if isinstance(image_or_path, np.ndarray):
       self.imgs[img_id] = image_or_path.copy()
-    else: 
+    else:
       self.imgs[img_id] = cv2.imread(image_or_path)
     # thickness = 1
     if self.opt.show_track_color:
@@ -360,7 +361,7 @@ class Debugger(object):
           box_3d = compute_box_3d(dim, loc, rot_y)
           box_2d = project_to_image(box_3d, calib)
           self.imgs[img_id] = draw_box_3d(
-            self.imgs[img_id], box_2d.astype(np.int32), cl, 
+            self.imgs[img_id], box_2d.astype(np.int32), cl,
             same_color=self.opt.show_track_color or self.opt.qualitative)
           if self.opt.show_track_color or self.opt.qualitative:
             bbox = [box_2d[:,0].min(), box_2d[:,1].min(),
@@ -370,7 +371,7 @@ class Debugger(object):
             self.add_coco_bbox(
               bbox, item['class'] - 1, sc, no_bbox=True, img_id=img_id)
           if self.opt.show_track_color:
-            self.add_arrow([(bbox[0] + bbox[2]) / 2, (bbox[1] + bbox[3]) / 2], 
+            self.add_arrow([(bbox[0] + bbox[2]) / 2, (bbox[1] + bbox[3]) / 2],
               item['tracking'], img_id=img_id)
 
     # print('===========================')
@@ -421,17 +422,15 @@ class Debugger(object):
             True,lc,2,lineType=cv2.LINE_AA)
         for e in [[0, 1]]:
           t = 4 if e == [0, 1] else 1
-          cv2.line(bird_view, (rect[e[0]][0], rect[e[0]][1]),
-                  (rect[e[1]][0], rect[e[1]][1]), lc, t,
-                  lineType=cv2.LINE_AA)
+          cv2.line(bird_view, (int(rect[e[0]][0]), int(rect[e[0]][1])), (int(rect[e[1]][0]), int(rect[e[1]][1])), lc, t, lineType=cv2.LINE_AA)
 
     self.imgs[img_id] = bird_view
 
-  def add_bird_views(self, dets_dt, dets_gt, vis_thresh=0.3, img_id='bird', 
+  def add_bird_views(self, dets_dt, dets_gt, vis_thresh=0.3, img_id='bird',
                      pc_3d=None, draw_ego=True, show_velocity=False):
     bird_view = np.ones((self.out_size, self.out_size, 3), dtype=np.uint8) * 230
     for ii, (dets, lc, cc) in enumerate(
-      [(dets_gt, (59, 67, 235), (10, 20, 180)), 
+      [(dets_gt, (59, 67, 235), (10, 20, 180)),
        (dets_dt, (250, 152, 12), (255, 0, 0))]):
       for item in dets:
         if item['score'] > vis_thresh \
@@ -459,7 +458,7 @@ class Debugger(object):
           if show_velocity:
             str_pt = (int(rect[e[0]][0]/2. + rect[e[1]][0]/2.), int(rect[e[0]][1]/2. + rect[e[1]][1]/2.))
             end_pt = (int(str_pt[0] + 3*item['velocity'][0]), int(str_pt[1] - 3*item['velocity'][2]))
-            cv2.arrowedLine(bird_view, str_pt, end_pt, cc, 
+            cv2.arrowedLine(bird_view, str_pt, end_pt, cc,
               thickness=2, line_type=cv2.LINE_AA, tipLength=0.3)
 
     if pc_3d is not None:
@@ -471,13 +470,13 @@ class Debugger(object):
     if draw_ego:
       p_ego = self.project_3d_to_bird(np.array([0.0, 0.0]))
       bird_view = cv2.circle(bird_view, (int(p_ego[0]), int(p_ego[1])), 6, (50,50,50), -1)
-    
+
     self.imgs[img_id] = bird_view
 
 
   def add_arrow(self, st, ed, img_id, c=(255, 0, 255), w=2):
     cv2.arrowedLine(
-      self.imgs[img_id], (int(st[0]), int(st[1])), 
+      self.imgs[img_id], (int(st[0]), int(st[1])),
       (int(ed[0] + st[0]), int(ed[1] + st[1])), c, 2,
       line_type=cv2.LINE_AA, tipLength=0.3)
 

@@ -28,7 +28,7 @@ class PrefetchDataset(torch.utils.data.Dataset):
     self.get_default_calib = dataset.get_default_calib
     self.opt = opt
     self.dataset = dataset
-  
+
   def __getitem__(self, index):
     img_id = self.images[index]
     img_info = self.load_image_func(ids=[img_id])[0]
@@ -42,17 +42,17 @@ class PrefetchDataset(torch.utils.data.Dataset):
       input_meta['calib'] = calib
       images[scale], meta[scale] = self.pre_process_func(
         image, scale, input_meta)
-      
+
     ret = {'images': images, 'image': image, 'meta': meta}
     if 'frame_id' in img_info and img_info['frame_id'] == 1:
       ret['is_first_frame'] = 1
       ret['video_id'] = img_info['video_id']
-    
+
     # add point cloud
     if opt.pointcloud:
       assert len(opt.test_scales)==1, "Multi-scale testing not supported with pointcloud."
       scale = opt.test_scales[0]
-      pc_2d, pc_N, pc_dep, pc_3d = self.dataset._load_pc_data(image, img_info, 
+      pc_2d, pc_N, pc_dep, pc_3d = self.dataset._load_pc_data(image, img_info,
         meta[scale]['trans_input'], meta[scale]['trans_output'])
       ret['pc_2d'] = pc_2d
       ret['pc_N'] = pc_N
@@ -71,13 +71,13 @@ def prefetch_test(opt):
   opt = opts().update_dataset_info_and_set_heads(opt, Dataset)
   print(opt)
   Logger(opt)
-  
+
   split = 'val' if not opt.trainval else 'test'
   if split == 'val':
     split = opt.val_split
   dataset = Dataset(opt, split)
   detector = Detector(opt)
-  
+
   if opt.load_results != '':
     load_results = json.load(open(opt.load_results, 'r'))
     for img_id in load_results:
@@ -88,7 +88,7 @@ def prefetch_test(opt):
     load_results = {}
 
   data_loader = torch.utils.data.DataLoader(
-    PrefetchDataset(opt, dataset, detector.pre_process), 
+    PrefetchDataset(opt, dataset, detector.pre_process),
     batch_size=1, shuffle=False, num_workers=1, pin_memory=True)
 
   results = {}
@@ -109,7 +109,7 @@ def prefetch_test(opt):
           load_results['{}'.format(int(img_id.numpy().astype(np.int32)[0]))]
       else:
         print()
-        print('No pre_dets for', int(img_id.numpy().astype(np.int32)[0]), 
+        print('No pre_dets for', int(img_id.numpy().astype(np.int32)[0]),
           '. Use empty initialization.')
         pre_processed_images['meta']['pre_dets'] = []
       detector.reset_tracking()
@@ -121,10 +121,12 @@ def prefetch_test(opt):
       else:
         print('No cur_dets for', int(img_id.numpy().astype(np.int32)[0]))
         pre_processed_images['meta']['cur_dets'] = []
-    
+
+    # TODO(drobinson): Load radar + camera info here
+
     ret = detector.run(pre_processed_images)
     results[int(img_id.numpy().astype(np.int32)[0])] = ret['results']
-    
+
     Bar.suffix = '[{0}/{1}]|Tot: {total:} |ETA: {eta:} '.format(
                    ind, num_iters, total=bar.elapsed_td, eta=bar.eta_td)
     for t in avg_time_stats:
@@ -140,10 +142,10 @@ def prefetch_test(opt):
   if opt.save_results:
     print('saving results to', opt.save_dir + '/save_results_{}{}.json'.format(
       opt.test_dataset, opt.dataset_version))
-    json.dump(_to_list(copy.deepcopy(results)), 
+    json.dump(_to_list(copy.deepcopy(results)),
               open(opt.save_dir + '/save_results_{}{}.json'.format(
                 opt.test_dataset, opt.dataset_version), 'w'))
-  dataset.run_eval(results, opt.save_dir, n_plots=opt.eval_n_plots, 
+  dataset.run_eval(results, opt.save_dir, n_plots=opt.eval_n_plots,
                    render_curves=opt.eval_render_curves)
 
 def test(opt):
@@ -153,7 +155,7 @@ def test(opt):
   opt = opts().update_dataset_info_and_set_heads(opt, Dataset)
   print(opt)
   Logger(opt)
-  
+
   split = 'val' if not opt.trainval else 'test'
   if split == 'val':
     split = opt.val_split
@@ -179,7 +181,7 @@ def test(opt):
       detector.reset_tracking()
       input_meta['pre_dets'] = load_results[img_id]
 
-    ret = detector.run(img_path, input_meta)    
+    ret = detector.run(img_path, input_meta)
     results[img_id] = ret['results']
 
     Bar.suffix = '[{0}/{1}]|Tot: {total:} |ETA: {eta:} '.format(
@@ -192,10 +194,10 @@ def test(opt):
   if opt.save_results:
     print('saving results to', opt.save_dir + '/save_results_{}{}.json'.format(
       opt.test_dataset, opt.dataset_version))
-    json.dump(_to_list(copy.deepcopy(results)), 
+    json.dump(_to_list(copy.deepcopy(results)),
               open(opt.save_dir + '/save_results_{}{}.json'.format(
                 opt.test_dataset, opt.dataset_version), 'w'))
-  dataset.run_eval(results, opt.save_dir, n_plots=opt.eval_n_plots, 
+  dataset.run_eval(results, opt.save_dir, n_plots=opt.eval_n_plots,
                    trairender_curves=opt.eval_render_curves)
 
 

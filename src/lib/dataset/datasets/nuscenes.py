@@ -25,7 +25,7 @@ class nuScenes(GenericDataset):
   default_resolution = [448, 800]
   num_categories = 10
   class_name = [
-    'car', 'truck', 'bus', 'trailer', 
+    'car', 'truck', 'bus', 'trailer',
     'construction_vehicle', 'pedestrian', 'motorcycle', 'bicycle',
     'traffic_cone', 'barrier']
   cat_ids = {i + 1: i + 1 for i in range(num_categories)}
@@ -37,30 +37,30 @@ class nuScenes(GenericDataset):
   _pedestrians = ['pedestrian']
   attribute_to_id = {
     '': 0, 'cycle.with_rider' : 1, 'cycle.without_rider' : 2,
-    'pedestrian.moving': 3, 'pedestrian.standing': 4, 
+    'pedestrian.moving': 3, 'pedestrian.standing': 4,
     'pedestrian.sitting_lying_down': 5,
-    'vehicle.moving': 6, 'vehicle.parked': 7, 
+    'vehicle.moving': 6, 'vehicle.parked': 7,
     'vehicle.stopped': 8}
   id_to_attribute = {v: k for k, v in attribute_to_id.items()}
 
 
   def __init__(self, opt, split):
     split_names = {
-        'mini_train':'mini_train', 
+        'mini_train':'mini_train',
         'mini_val':'mini_val',
-        'train': 'train', 
+        'train': 'train',
         'train_detect': 'train_detect',
-        'train_track':'train_track', 
+        'train_track':'train_track',
         'val': 'val',
         'test': 'test',
         'mini_train_2': 'mini_train_2',
         'trainval': 'trainval',
     }
-    
+
     split_name = split_names[split]
     data_dir = os.path.join(opt.data_dir, 'nuscenes')
     print('Dataset version', opt.dataset_version)
-    
+
     anns_dir = 'annotations'
     if opt.radar_sweeps > 1:
       anns_dir += '_{}sweeps'.format(opt.radar_sweeps)
@@ -73,7 +73,7 @@ class nuScenes(GenericDataset):
     self.images = None
     super(nuScenes, self).__init__(opt, split, ann_path, data_dir)
 
-    self.alpha_in_degree = False    
+    self.alpha_in_degree = False
     self.num_samples = len(self.images)
 
     print('Loaded {} {} samples'.format(split, self.num_samples))
@@ -93,7 +93,7 @@ class nuScenes(GenericDataset):
       if type(all_bboxes[image_id]) != type({}):
         # newest format
         for j in range(len(all_bboxes[image_id])):
-          item = all_bboxes[image_id][j]   
+          item = all_bboxes[image_id][j]
           category_id = citem['class']
           bbox = item['bbox']
           bbox[2] -= bbox[0]
@@ -110,8 +110,8 @@ class nuScenes(GenericDataset):
 
 
   def convert_eval_format(self, results):
-    ret = {'meta': {'use_camera': True, 'use_lidar': False, 
-      'use_radar': self.opt.pointcloud, 
+    ret = {'meta': {'use_camera': True, 'use_lidar': False,
+      'use_radar': self.opt.pointcloud,
       'use_map': False, 'use_external': False}, 'results': {}}
     print('Converting nuscenes format...')
     for image_id in self.images:
@@ -139,12 +139,12 @@ class nuScenes(GenericDataset):
           translation = item['translation']
         else:
           translation = np.dot(trans_matrix, np.array(
-            [item['loc'][0], item['loc'][1] - size[2], item['loc'][2], 1], 
+            [item['loc'][0], item['loc'][1] - size[2], item['loc'][2], 1],
             np.float32))
 
         det_id = item['det_id'] if 'det_id' in item else -1
         tracking_id = item['tracking_id'] if 'tracking_id' in item else 1
-        
+
         if not ('rotation' in item):
           rot_cam = Quaternion(
             axis=[0, 1, 0], angle=item['rot_y'])
@@ -161,7 +161,7 @@ class nuScenes(GenericDataset):
             float(rotation.y), float(rotation.z)]
         else:
            rotation = item['rotation']
-        
+
         nuscenes_att = np.array(item['nuscenes_att'], np.float32) \
           if 'nuscenes_att' in item else np.zeros(8, np.float32)
         att = ''
@@ -175,7 +175,7 @@ class nuScenes(GenericDataset):
           velocity = item['velocity']
         else:
           velocity = item['velocity'] if 'velocity' in item else [0, 0, 0]
-          
+
           velocity = np.dot(velocity_mat, np.array(
             [velocity[0], velocity[1], velocity[2], 0], np.float32))
           # velocity = np.dot(trans_matrix, np.array(
@@ -183,7 +183,7 @@ class nuScenes(GenericDataset):
           velocity = [float(velocity[0]), float(velocity[1])]
 
         result = {
-          'sample_token': sample_token, 
+          'sample_token': sample_token,
           'translation': [float(translation[0]), float(translation[1]), \
             float(translation[2])],
           'size': size,
@@ -211,12 +211,12 @@ class nuScenes(GenericDataset):
         for ind, d in enumerate(ret['results'][sample_token])])
       ret['results'][sample_token] = [ret['results'][sample_token][ind] \
         for _, ind in confs[:min(500, len(confs))]]
-    
+
     if self.opt.iou_thresh > 0:
       print("Applying BEV NMS...")
       n_removed = 0
       for sample_token, dets in tqdm(ret['results'].items()):
-        ret['results'][sample_token], n = self.apply_bev_nms(dets, self.opt.iou_thresh, 
+        ret['results'][sample_token], n = self.apply_bev_nms(dets, self.opt.iou_thresh,
                                                           dist_thresh=2)
         n_removed += n
       print("Removed {} detections with IOU > {}".format(n_removed, self.opt.iou_thresh))
@@ -241,12 +241,12 @@ class nuScenes(GenericDataset):
         ious = self.bev_iou(dets[i], dets[i+1:])
       except (ValueError, IndexError) as e:
         break
-      
+
       iou_mask = (np.array(ious) < iou_thresh)
       dets = dets[:i+1] + list(compress(dets[i+1:], iou_mask))
 
     return dets, N-len(dets)
-  
+
 
   def bev_iou(self, det1, det2, dist_thresh = 2):
     ious = []
@@ -260,12 +260,12 @@ class nuScenes(GenericDataset):
       box2 = Box(det['translation'], det['size'], Quaternion(det['rotation']))
       iou, iou_2d = iou3d_global(box1.corners(), box2.corners())
       ious.append(iou_2d)
-    
+
     return ious
 
 
   def save_results(self, results, save_dir, task, split):
-    json.dump(self.convert_eval_format(results), 
+    json.dump(self.convert_eval_format(results),
                 open('{}/results_nuscenes_{}_{}.json'.format(save_dir, task, split), 'w'))
 
 
@@ -275,7 +275,7 @@ class nuScenes(GenericDataset):
     version = 'v1.0-mini' if 'mini' in split else 'v1.0-trainval'
     self.save_results(results, save_dir, task, split)
     render_curves = 1 if render_curves else 0
-    
+
     if task == 'det':
       output_dir = '{}/nuscenes_eval_det_output_{}/'.format(save_dir, split)
       os.system('python ' + \
@@ -299,5 +299,5 @@ class nuScenes(GenericDataset):
         '{}/results_nuscenes_{}_{}.json '.format(save_dir, task, split) + \
         '--output_dir {} '.format(output_dir) + \
         '--dataroot ../data/nuscenes/')
-    
+
     return output_dir

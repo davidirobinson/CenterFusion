@@ -26,23 +26,20 @@ DATA_PATH = '../../data/nuscenes/'
 OUT_PATH = DATA_PATH + 'annotations'
 SPLITS = {
           'mini_val': 'v1.0-mini',
-          'mini_train': 'v1.0-mini',
-          'train': 'v1.0-trainval',
-          'val': 'v1.0-trainval',
-          'test': 'v1.0-test',
-          }
+          'mini_train': 'v1.0-mini'
+         }
 
 DEBUG = False
-CATS = ['car', 'truck', 'bus', 'trailer', 'construction_vehicle', 
+CATS = ['car', 'truck', 'bus', 'trailer', 'construction_vehicle',
         'pedestrian', 'motorcycle', 'bicycle', 'traffic_cone', 'barrier']
-SENSOR_ID = {'RADAR_FRONT': 7, 'RADAR_FRONT_LEFT': 9, 
-  'RADAR_FRONT_RIGHT': 10, 'RADAR_BACK_LEFT': 11, 
-  'RADAR_BACK_RIGHT': 12,  'LIDAR_TOP': 8, 
-  'CAM_FRONT': 1, 'CAM_FRONT_RIGHT': 2, 
+SENSOR_ID = {'RADAR_FRONT': 7, 'RADAR_FRONT_LEFT': 9,
+  'RADAR_FRONT_RIGHT': 10, 'RADAR_BACK_LEFT': 11,
+  'RADAR_BACK_RIGHT': 12,  'LIDAR_TOP': 8,
+  'CAM_FRONT': 1, 'CAM_FRONT_RIGHT': 2,
   'CAM_BACK_RIGHT': 3, 'CAM_BACK': 4, 'CAM_BACK_LEFT': 5,
   'CAM_FRONT_LEFT': 6}
 
-USED_SENSOR = ['CAM_FRONT', 'CAM_FRONT_RIGHT', 
+USED_SENSOR = ['CAM_FRONT', 'CAM_FRONT_RIGHT',
   'CAM_BACK_RIGHT', 'CAM_BACK', 'CAM_BACK_LEFT',
   'CAM_FRONT_LEFT']
 
@@ -76,13 +73,13 @@ def _rot_y2alpha(rot_y, x, cx, fx):
 
 def _bbox_inside(box1, box2):
   return box1[0] > box2[0] and box1[0] + box1[2] < box2[0] + box2[2] and \
-         box1[1] > box2[1] and box1[1] + box1[3] < box2[1] + box2[3] 
+         box1[1] > box2[1] and box1[1] + box1[3] < box2[1] + box2[3]
 
 ATTRIBUTE_TO_ID = {
   '': 0, 'cycle.with_rider' : 1, 'cycle.without_rider' : 2,
-  'pedestrian.moving': 3, 'pedestrian.standing': 4, 
+  'pedestrian.moving': 3, 'pedestrian.standing': 4,
   'pedestrian.sitting_lying_down': 5,
-  'vehicle.moving': 6, 'vehicle.parked': 7, 
+  'vehicle.moving': 6, 'vehicle.parked': 7,
   'vehicle.stopped': 8}
 
 def main():
@@ -95,7 +92,7 @@ def main():
       version=SPLITS[split], dataroot=data_path, verbose=True)
     out_path = OUT_PATH + '{}.json'.format(split)
     categories_info = [{'name': CATS[i], 'id': i + 1} for i in range(len(CATS))]
-    ret = {'images': [], 'annotations': [], 'categories': categories_info, 
+    ret = {'images': [], 'annotations': [], 'categories': categories_info,
            'videos': [], 'attributes': ATTRIBUTE_TO_ID, 'pointclouds': []}
     num_images = 0
     num_anns = 0
@@ -134,7 +131,7 @@ def main():
 
           vel_global_from_car = transform_matrix(np.array([0,0,0]),
             Quaternion(pose_record['rotation']), inverse=False)
-          vel_car_from_sensor = transform_matrix(np.array([0,0,0]), 
+          vel_car_from_sensor = transform_matrix(np.array([0,0,0]),
             Quaternion(cs_record['rotation']), inverse=False)
           velocity_trans_matrix = np.dot(vel_global_from_car, vel_car_from_sensor)
 
@@ -148,14 +145,14 @@ def main():
            # get radar pointclouds
           all_radar_pcs = RadarPointCloud(np.zeros((18, 0)))
           for radar_channel in RADARS_FOR_CAMERA[sensor_name]:
-            radar_pcs, _ = RadarPointCloud.from_file_multisweep(nusc, 
+            radar_pcs, _ = RadarPointCloud.from_file_multisweep(nusc,
               sample, radar_channel, sensor_name, NUM_SWEEPS)
             all_radar_pcs.points = np.hstack((all_radar_pcs.points, radar_pcs.points))
-          
+
           # image information in COCO format
           image_info = {'id': num_images,
                         'file_name': image_data['filename'],
-                        'calib': calib.tolist(), 
+                        'calib': calib.tolist(),
                         'video_id': num_videos,
                         'frame_id': frame_ids[sensor_name],
                         'sensor_id': SENSOR_ID[sensor_name],
@@ -168,7 +165,7 @@ def main():
                         'pose_record_rot': pose_record['rotation'],
                         'cs_record_trans': cs_record['translation'],
                         'cs_record_rot': cs_record['rotation'],
-                        'radar_pc': all_radar_pcs.points.tolist(), 
+                        'radar_pc': all_radar_pcs.points.tolist(),
                         'camera_intrinsic': camera_intrinsic.tolist()}
           ret['images'].append(image_info)
 
@@ -184,7 +181,7 @@ def main():
             category_id = CAT_IDS[det_name]
 
             amodel_center = project_to_image(
-              np.array([box.center[0], box.center[1] - box.wlh[2] / 2, box.center[2]], 
+              np.array([box.center[0], box.center[1] - box.wlh[2] / 2, box.center[2]],
                 np.float32).reshape(1, 3), calib)[0].tolist()
             sample_ann = nusc.get(
               'sample_annotation', box.token)
@@ -200,13 +197,13 @@ def main():
               import pdb; pdb.set_trace()
             track_id = track_ids[instance_token]
             vel = nusc.box_velocity(box.token).tolist() # global frame
-            # vel = np.dot(np.linalg.inv(trans_matrix), 
+            # vel = np.dot(np.linalg.inv(trans_matrix),
             #   np.array([vel[0], vel[1], vel[2], 0], np.float32)).tolist()
-            
+
             # get velocity in camera coordinates
-            vel_cam = np.dot(np.linalg.inv(velocity_trans_matrix), 
+            vel_cam = np.dot(np.linalg.inv(velocity_trans_matrix),
               np.array([vel[0], vel[1], vel[2], 0], np.float32)).tolist()
-            # vel_glob = np.dot(velocity_trans_matrix, 
+            # vel_glob = np.dot(velocity_trans_matrix,
             #   np.array([vel_cam[0], vel_cam[1], vel_cam[2], 0], np.float32)).tolist()
 
             # instance information in COCO format
@@ -230,7 +227,7 @@ def main():
 
             bbox = KittiDB.project_kitti_box_to_image(
               copy.deepcopy(box), camera_intrinsic, imsize=(1600, 900))
-            alpha = _rot_y2alpha(yaw, (bbox[0] + bbox[2]) / 2, 
+            alpha = _rot_y2alpha(yaw, (bbox[0] + bbox[2]) / 2,
                                  camera_intrinsic[0, 2], camera_intrinsic[0, 0])
             ann['bbox'] = [bbox[0], bbox[1], bbox[2] - bbox[0], bbox[3] - bbox[1]]
             ann['area'] = (bbox[2] - bbox[0]) * (bbox[3] - bbox[1])
@@ -254,7 +251,7 @@ def main():
 
           for ann in visable_anns:
             ret['annotations'].append(ann)
-          
+
           if DEBUG:
             img_path = data_path + image_info['file_name']
             img = cv2.imread(img_path)
@@ -264,12 +261,12 @@ def main():
             cam_intrinsic = np.array(image_info['calib'])[:,:3]
             points, coloring, _ = map_pointcloud_to_image(pc, cam_intrinsic)
             for i, p in enumerate(points.T):
-              img = cv2.circle(img, (int(p[0]), int(p[1])), 5, (255,0,0), -1) 
-            
+              img = cv2.circle(img, (int(p[0]), int(p[1])), 5, (255,0,0), -1)
+
             for ann in visable_anns:
               bbox = ann['bbox']
-              cv2.rectangle(img, (int(bbox[0]), int(bbox[1])), 
-                            (int(bbox[2] + bbox[0]), int(bbox[3] + bbox[1])), 
+              cv2.rectangle(img, (int(bbox[0]), int(bbox[1])),
+                            (int(bbox[2] + bbox[0]), int(bbox[3] + bbox[1])),
                             (0, 0, 255), 3, lineType=cv2.LINE_AA)
               box_3d = compute_box_3d(ann['dim'], ann['location'], ann['rotation_y'])
               box_2d = project_to_image(box_3d, calib)
@@ -287,13 +284,13 @@ def main():
             # cv2.imshow('img', img)
             # cv2.imshow('img_3d', img_3d)
             # cv2.waitKey()
-            
+
             cv2.imwrite('img.jpg', img)
             cv2.imwrite('img_3d.jpg', img_3d)
             nusc.render_sample_data(image_token, out_path='nusc_img.jpg')
             input('press enter to continue')
             # plt.show()
-    
+
     print('reordering images')
     images = ret['images']
     video_sensor_to_images = {}
@@ -312,7 +309,7 @@ def main():
     print('out_path', out_path)
     json.dump(ret, open(out_path, 'w'))
 
-# Official train/ val split from 
+# Official train/ val split from
 # https://github.com/nutonomy/nuscenes-devkit/blob/master/python-sdk/nuscenes/utils/splits.py
 SCENE_SPLITS = {
 'train':
