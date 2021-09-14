@@ -142,12 +142,13 @@ def main():
           calib = calib[:3]
           frame_ids[sensor_name] += 1
 
-           # get radar pointclouds
+          # get radar pointclouds
           all_radar_pcs = RadarPointCloud(np.zeros((18, 0)))
           for radar_channel in RADARS_FOR_CAMERA[sensor_name]:
             radar_pcs, _ = RadarPointCloud.from_file_multisweep(nusc,
               sample, radar_channel, sensor_name, NUM_SWEEPS)
             all_radar_pcs.points = np.hstack((all_radar_pcs.points, radar_pcs.points))
+
 
           # image information in COCO format
           image_info = {'id': num_images,
@@ -194,7 +195,6 @@ def main():
             att = '' if len(attributes) == 0 else attributes[0]
             if len(attributes) > 1:
               print(attributes)
-              import pdb; pdb.set_trace()
             track_id = track_ids[instance_token]
             vel = nusc.box_velocity(box.token).tolist() # global frame
             # vel = np.dot(np.linalg.inv(trans_matrix),
