@@ -28,7 +28,7 @@ import time
 DATA_PATH = '/media/drobinson/2tbexternal/caas/saved_data/'
 OUT_PATH = DATA_PATH + 'annotations'
 
-DEBUG = True
+DEBUG = False
 CATS = ['car', 'truck', 'bus', 'trailer', 'construction_vehicle',
         'pedestrian', 'motorcycle', 'bicycle', 'traffic_cone', 'barrier']
 SENSOR_ID = {'RADAR_FRONT': 7, 'RADAR_FRONT_LEFT': 9,
@@ -133,7 +133,7 @@ def main():
     velocity_global_from_sensor = np.dot(vel_global_from_car, vel_car_from_sensor)
 
     # Hardcode monocam intrinsics for now
-    # TODO(drobinson): Undistort images?
+    # NOTE: We're using undistort images for this demo
     camera_intrinsic = np.array(
       [[419.8938293457031, 0.0, 474.5676574707031],
        [0.0, 419.7181396484375, 310.60125732421875],
@@ -155,11 +155,10 @@ def main():
           continue # skip header
 
         # TODO(drobinson): Are the y & z fields switched?
-        # TODO(drobinson): I think we need the radar points in the camera frame like nuscenes
         radar_pcs = np.zeros((18, 1))
         radar_pcs[0] = float(row[0]) # x
-        radar_pcs[1] = float(row[2]) # y (or z?)
-        radar_pcs[2] = float(row[1]) # z (or y?)
+        radar_pcs[1] = float(row[1]) # y (or z?)
+        radar_pcs[2] = float(row[2]) # z (or y?)
         radar_pcs[8] = 0 # vx
         radar_pcs[9] = float(row[6]) # doppler -> vz
         radar_pcs[10] = 1 # valid
@@ -178,10 +177,10 @@ def main():
                   'velocity_trans_matrix': velocity_global_from_sensor.tolist(),
                   'width': width,
                   'height': height,
-                  'pose_record_trans': global_from_car_translation,
-                  'pose_record_rot': global_from_car_rotation,
-                  'cs_record_trans': car_from_sensor_translation,
-                  'cs_record_rot': car_from_sensor_rotation,
+                  'pose_record_trans': global_from_car_translation.tolist(),
+                  'pose_record_rot': global_from_car_rotation.tolist(),
+                  'cs_record_trans': car_from_sensor_translation.tolist(),
+                  'cs_record_rot': car_from_sensor_rotation.tolist(),
                   'radar_pc': all_radar_pcs.tolist(),
                   'camera_intrinsic': camera_intrinsic.tolist()}
     ret['images'].append(image_info)
@@ -189,7 +188,6 @@ def main():
     if DEBUG:
       img_path = data_path + image_info['file_name']
       img = cv2.imread(img_path)
-      img_3d = img.copy()
       # plot radar point clouds
       pc = np.array(image_info['radar_pc'])
       cam_intrinsic = np.array(image_info['calib'])[:,:3]
@@ -198,7 +196,6 @@ def main():
         img = cv2.circle(img, (int(p[0]), int(p[1])), 5, (255,0,0), -1)
 
       cv2.imshow('img', img)
-      cv2.imshow('img_3d', img_3d)
       cv2.waitKey()
 
   print('{} {} images {} boxes'.format(
