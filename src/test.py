@@ -32,7 +32,10 @@ class PrefetchDataset(torch.utils.data.Dataset):
   def __getitem__(self, index):
     img_id = self.images[index]
     img_info = self.load_image_func(ids=[img_id])[0]
-    img_path = os.path.join(self.img_dir, img_info['file_name'])
+    if img_info['file_name'][0] == "/":
+      img_path = os.path.join(self.img_dir, img_info['file_name'][1:])
+    else:
+      img_path = os.path.join(self.img_dir, img_info['file_name'])
     image = cv2.imread(img_path)
     images, meta = {}, {}
     for scale in opt.test_scales:
@@ -67,6 +70,7 @@ class PrefetchDataset(torch.utils.data.Dataset):
 def prefetch_test(opt):
   if not opt.not_set_cuda_env:
     os.environ['CUDA_VISIBLE_DEVICES'] = opt.gpus_str
+
   Dataset = dataset_factory[opt.test_dataset]
   opt = opts().update_dataset_info_and_set_heads(opt, Dataset)
   print(opt)
@@ -76,6 +80,7 @@ def prefetch_test(opt):
   if split == 'val':
     split = opt.val_split
   dataset = Dataset(opt, split)
+
   detector = Detector(opt)
 
   if opt.load_results != '':
@@ -121,8 +126,6 @@ def prefetch_test(opt):
       else:
         print('No cur_dets for', int(img_id.numpy().astype(np.int32)[0]))
         pre_processed_images['meta']['cur_dets'] = []
-
-    # TODO(drobinson): Load radar + camera info here
 
     ret = detector.run(pre_processed_images)
     results[int(img_id.numpy().astype(np.int32)[0])] = ret['results']
