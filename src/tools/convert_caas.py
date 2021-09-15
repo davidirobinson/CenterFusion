@@ -8,24 +8,17 @@ import csv
 import json
 import numpy as np
 import cv2
-import copy
 from natsort import natsorted
-import matplotlib.pyplot as plt
-from nuscenes.nuscenes import NuScenes
-from nuscenes.utils.geometry_utils import BoxVisibility, transform_matrix
-from nuScenes_lib.utils_kitti import KittiDB
-from nuscenes.eval.detection.utils import category_to_detection_name
+from nuscenes.utils.geometry_utils import transform_matrix
 from pyquaternion import Quaternion
 
 import _init_paths
-from utils.ddd_utils import compute_box_3d, project_to_image, alpha2rot_y
-from utils.ddd_utils import draw_box_3d, unproject_2d_to_3d
 from utils.pointcloud import RadarPointCloudWithVelocity as RadarPointCloud
 from nuScenes_lib.utils_radar import map_pointcloud_to_image
-import time
 
 
-DATA_PATH = '/media/drobinson/2tbexternal/caas/calibration/data/centerfusion_format/'
+# DATA_PATH = '/media/drobinson/2tbexternal/caas/calibration/data/centerfusion_format/'
+DATA_PATH = '/media/drobinson/2tbexternal/caas/2021-07-17_extracted_79de6666-b484-44b1-8202-ea1827abf727/centerfusion_format/'
 OUT_PATH = DATA_PATH + '/annotations/'
 
 DEBUG = False
