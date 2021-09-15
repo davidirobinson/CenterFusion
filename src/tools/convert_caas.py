@@ -25,8 +25,8 @@ from nuScenes_lib.utils_radar import map_pointcloud_to_image
 import time
 
 
-DATA_PATH = '/media/drobinson/2tbexternal/caas/saved_data/'
-OUT_PATH = DATA_PATH + 'annotations'
+DATA_PATH = '/media/drobinson/2tbexternal/caas/calibration/data/centerfusion_format/'
+OUT_PATH = DATA_PATH + '/annotations/'
 
 DEBUG = False
 CATS = ['car', 'truck', 'bus', 'trailer', 'construction_vehicle',
@@ -85,7 +85,7 @@ def main():
   if not os.path.exists(OUT_PATH):
     os.mkdir(OUT_PATH)
 
-  split = "playback"
+  split = "test"
   data_path = DATA_PATH
   out_path = OUT_PATH + '{}.json'.format(split)
   categories_info = [{'name': CATS[i], 'id': i + 1} for i in range(len(CATS))]
@@ -110,12 +110,13 @@ def main():
     global_from_car_translation = np.array([0,0,0])
     global_from_car_rotation = np.array([0,0,0,0])
 
-    # TODO(drobinson): should we encoode the offset of the sensor here? Might be important for pillar height!
+    # TODO(drobinson): Should we encoode the offset of the sensor here?
+    #                  This might be important for pillar height!
     # (Pdb) cs_record['translation']
     # [1.72200568478, 0.00475453292289, 1.49491291905]
     # (Pdb) cs_record['rotation']
     # [0.5077241387638071, -0.4973392230703816, 0.49837167536166627, -0.4964832014373754]
-    car_from_sensor_translation = np.array([0,0,1.5])
+    car_from_sensor_translation = np.array([0,0,0])
     car_from_sensor_rotation = np.array([0,0,0,0])
 
     global_from_car = transform_matrix(global_from_car_translation,
@@ -136,16 +137,19 @@ def main():
     # NOTE: We're using undistort images for this demo
     camera_intrinsic = np.array(
       [[419.8938293457031, 0.0, 474.5676574707031],
-       [0.0, 419.7181396484375, 310.60125732421875],
+       [0.0, 419.7181396484375, 324.60125732421875],
        [0.0, 0.0, 1.0]])
 
     calib = np.eye(4, dtype=np.float32)
     calib[:3, :3] = camera_intrinsic
     calib = calib[:3]
 
+    #
     # Get radar pointclouds
     # incoming format: x,y,z,range,ranazimuthge,elevation,doppler,magnitude,snr,rcs
     # outgoing format: x,y,z,dyn_prop,id,rcs,vx,vy,vx_comp,vy_comp,is_quality_valid,ambig_state,x_rms,y_rms,invalid_state,pdh0,vx_rms,vy_rms
+    # ref: CenterFusion/src/tools/nuscenes-devkit/python-sdk/nuscenes/utils/data_classes.py
+    #
     all_radar_pcs = np.zeros((18, 0))
 
     with open(data_path + "/radar/" + radar_file, newline='') as csvfile:
@@ -154,13 +158,12 @@ def main():
         if row[0] == 'x':
           continue # skip header
 
-        # TODO(drobinson): Are the y & z fields switched?
         radar_pcs = np.zeros((18, 1))
         radar_pcs[0] = float(row[0]) # x
-        radar_pcs[1] = float(row[1]) # y (or z?)
-        radar_pcs[2] = float(row[2]) # z (or y?)
+        radar_pcs[1] = float(row[1]) # y
+        radar_pcs[2] = float(row[2]) # z
         radar_pcs[8] = 0 # vx
-        radar_pcs[9] = float(row[6]) # doppler -> vz
+        radar_pcs[9] = float(row[6]) # doppler -> vz (or vy more likley?)
         radar_pcs[10] = 1 # valid
 
         all_radar_pcs = np.hstack((all_radar_pcs, radar_pcs))

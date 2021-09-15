@@ -4,8 +4,8 @@ cd src
 ## Perform detection and evaluation
 python test.py ddd \
     --exp_id centerfusion \
-    --dataset nuscenes \
-    --val_split mini_val \
+    --dataset caas \
+    --val_split test \
     --run_dataset_eval \
     --num_workers 4 \
     --nuscenes_att \
@@ -17,5 +17,6 @@ python test.py ddd \
     --pc_z_offset -0.0 \
     --load_model ../models/centerfusion_e60.pth \
     --flip_test \
-    --debug 1
+    --debug 4 \
+    --custom_dataset_img_path /media/drobinson/2tbexternal/caas/calibration/data/centerfusion_format
     # --resume \
